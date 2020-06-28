@@ -1,88 +1,104 @@
 package main
 
 import (
-	"fmt"
-	"github.com/BurntSushi/toml"
+	"example.com/runner/pkg/config"
 	"log"
+	"math"
+	"os"
 	"os/exec"
 )
 
-type tomlConfig struct {
-	Title    string
-	Jobsteps map[string]jobstep
-}
-type jobstep struct {
+
+
+//TODO rename to better name, and do not export it if possible
+type Jobstep struct {
 	Nickname string
-	Shell    string
 	Command  string
 	Args     []string
-}
-type completedJobstep struct {
-	Nickname string
-	StdoutStderr []byte
-	ExitCode int
-	Error error
-	//TODO the output and or errors
+	//TODO support a max run elapsed time
 }
 
+//TODO do not embed here to keep mine private; instead have command and args only
+type JobStepResult struct {
+	wrappedJopstep    config.CommandUnit
+	outputStdAndError string
+	ExitCode          int
+	Error             error
+}
 
-//TODO pass argument with the config file
+//TODO logging in json format maybe zip library
+//TODO enforce have at least one command ?
 func main() {
-	const defaultConfigFile = "jobStep.toml"
-	jobsteps := initJobSteps(defaultConfigFile)
-	fmt.Println("vardump: \n", len(jobsteps))
+	//take input arg config file and if there is no arg use default
+	const defaultConfigFile = "pkg/config/jobStep.toml"
+	var configFile string
+	if len(os.Args) > 1 {
+		configFile = os.Args[1]
+	} else {
+		configFile = defaultConfigFile
+	}
+	log.Printf("config file set to: %s \n", configFile)
+	myCommandUnits := config.InitJobSteps(configFile) //print each thing we are going to run on one line
+	//TODO see if there is a concise functional way to do this
+	theNicknamesToRun := make([]string, 0, len(myCommandUnits))
+	for _, js := range myCommandUnits {
+		theNicknamesToRun = append(theNicknamesToRun, js.Nickname)
+	}
+	log.Printf("running in parallel:: %s\n", theNicknamesToRun)
 
-	resultChannel := make(chan completedJobstep) //channel for each execution to write its results
-
-	for _, js := range jobsteps {
-		fmt.Printf("starting go routine for step: %s\n", js.Nickname)//step.Nickname)
+	resultChannel := make(chan JobStepResult) //channel for each execution to write its results
+	for _, js := range myCommandUnits {
 		go runStep(js, resultChannel)
-}
+	}
 
-	for i := 0; i < len(jobsteps); i++ {
+
+//TODO return structure that summarizes the steps and exit codes
+	jsResults := make([]JobStepResult, 0, len(myCommandUnits))
+
+	for i := 0; i < len(myCommandUnits); i++ {
 		result := <-resultChannel
-		fmt.Printf("jobstep: %s is finished with status: %d\n", result.Nickname,result.ExitCode)
+		jsResults = append(jsResults, result)
+		log.Printf("jobstep: %s has finished with status: %d\n", result.wrappedJopstep.Nickname, result.ExitCode)
 	}
-	fmt.Printf("all %d jobsteps are all done", len(jobsteps))
+
+	log.Printf("all %d of the jobsteps are done", len(myCommandUnits))
+	log.Printf("results: %+v\n", jsResults)
 }
 
-func runStep(step jobstep, resultChannel chan completedJobstep) {
-	fmt.Printf("executing step: %s Shell: %s Command: %s Args: %s\n", step.Nickname, step.Shell, step.Command, step.Args)
-	stepCommand := exec.Command(step.Shell, step.Command)
+const defaultFailureCode = math.MaxInt16
+
+func runStep(step config.CommandUnit, resultChannel chan JobStepResult) {
+	log.Printf("executing step: %s\n", step.Nickname)
+
+	stepCommand := exec.Command(step.Command, step.Args[0:]...)
 	stdoutStdErr, err := stepCommand.CombinedOutput()
-	var finished = completedJobstep{
-		Nickname: step.Nickname,
-		StdoutStderr: stdoutStdErr,
-		Error: err,
+
+	var finished = JobStepResult{
+		wrappedJopstep:    step,
+		outputStdAndError: string(stdoutStdErr),
+		Error:             err,
 	}
-	//TODO capture output from the process too
-	const variableFailCode = 86 //TODO get actual exit code
-	const successCode = 0
+
 	if err != nil {
-		fmt.Printf("failed result on step named: %s\n", step.Nickname)
-		finished.ExitCode = variableFailCode
+		log.Printf("result failed on step named: %s with errorType: %T error: %s\n", step.Nickname, err, err)
+		// If the command starts but does not complete successfully, the error is of
+		// type *ExitError. Other error types may be returned for other situations.
+		/// is if it is ExitError and if so rely on its ExitCode otherwise do what we can w/ default
+		_, ok := err.(*exec.ExitError)
+		if true == ok {
+			finished.ExitCode = err.(*exec.ExitError).ExitCode()
+		} else {
+			finished.ExitCode = defaultFailureCode
+		}
+
 		resultChannel <- finished
 	} else {
-		fmt.Printf("success result on step named: %s\n", step.Nickname)
-		finished.ExitCode = successCode
+		log.Printf("result success on step: %s\n", step.Nickname)
+
+		finished.ExitCode = 0
 		resultChannel <- finished
 	}
 }
 
 //TODO add a test case
 
-func initJobSteps(configFile string) []jobstep {
-	var config tomlConfig
-	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("config created from file: %s title of config: %s\n", configFile, config.Title)
-
-	jobsteps := make([]jobstep, 0, len(config.Jobsteps))
-
-	for _, js := range config.Jobsteps { //no need for name (the map's key)
-		jobsteps = append(jobsteps, js)
-		fmt.Printf("configured jobstep: %s (%s, %s) with args: %s\n", js.Nickname, js.Shell, js.Command, js.Args)
-	}
-	return jobsteps
-}

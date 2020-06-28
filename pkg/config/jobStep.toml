@@ -1,0 +1,25 @@
+# configuation of jobs to run
+# this is a TOML document. Boom.
+title = "Demonstration Config"
+
+[commandunits]
+    [commandunits.alpha]
+    nickname = "stepUno"
+    command = "/bin/sh"
+    args = ["/xxxUsers/mac/craft/innov/goBatch/shell1.sh"]
+
+    [commandunits.beta]
+    nickname = "stepDos"
+    command = "/bin/sh"
+    args = ["/Users/mac/craft/innov/goBatch/shell2.sh","q","xxxx"]
+
+    [commandunits.gamma]
+    nickname = "stepTres"
+    command = "echo"
+    args = ["hi","gopher"]
+
+    [commandunits.kappa]
+    nickname = "stepQuatro"
+    command = "date"
+    args = ["+%D-%H:%M:%S-%Z"]
+
