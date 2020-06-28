@@ -17,6 +17,8 @@ type CommandUnit struct {
 	//TODO support a max run elapsed time
 }
 
+
+//TODO add a test case
 func InitJobSteps(configFile string) []CommandUnit {
 	var config tomlConfig
 	if _, err := toml.DecodeFile(configFile, &config); err != nil {
