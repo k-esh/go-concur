@@ -5,35 +5,28 @@ import (
 	"log"
 )
 
-type tomlConfig struct {
-	Title    string
+//Commands and their args in this structure
+type CommandConfig struct {
+	Title        string
+	MaxRuntime	 int
 	CommandUnits map[string]CommandUnit
 }
-
+//commands and their optional args
 type CommandUnit struct {
-	Nickname string
-	Command  string
-	Args     []string
-	//TODO support a max run elapsed time
+	Command string
+	Args    []string
 }
 
-
 //TODO add a test case
-func InitJobSteps(configFile string) []CommandUnit {
-	var config tomlConfig
+func InitJobSteps(configFile string) (CommandConfig, error) {
+	var config CommandConfig
+
+	//retern error here if any problem with file
 	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		log.Fatal(err) //TODO cleaner way to fail or log it
+		log.Printf("error: %s parsing config file: %s will return error\n", err, configFile)
+		return config, err
 	}
-	log.Printf("config title: %s from file: %s\n", config.Title, configFile)
 
-	jobsteps := make([]CommandUnit, 0, len(config.CommandUnits))
-
-	nicknames := make([]string, 0, len(jobsteps))
-	for _, js := range config.CommandUnits { //no need for name (the map's key)
-		jobsteps = append(jobsteps, js)
-		nicknames = append(nicknames, js.Nickname)
-		log.Printf("configured jobstep: %s command: %s with args: [%s]\n", js.Nickname, js.Command, js.Args)
-	}
-	log.Printf("configured names to run: %s\n", nicknames)
-	return jobsteps
+	log.Printf("Config from file: %s has title: %s maxRuntime: %s commands: +%v\n", configFile, config.Title, config.MaxRuntime, config.CommandUnits)
+	return config, nil
 }
