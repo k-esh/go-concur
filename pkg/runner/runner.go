@@ -21,7 +21,7 @@ type CommandUnitResult struct {
 	Error             error
 }
 
-const defaultFailureCode = math.MaxInt16
+const defaultFailureCode = math.MaxInt8
 
 //parses input file returns ready to use runner, or parse file error
 func New(configFile string) (*Runner , error) {

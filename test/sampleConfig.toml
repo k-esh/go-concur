@@ -7,8 +7,7 @@ maxRuntime = 120
 
 [commandunits]
     [commandunits.firstCommandUnit]
-    command = "/bin/sh"
-    args = ["date"]
+    command = "date"
 
     [commandunits.favoriteCommandUnit]
     command = "echo"
