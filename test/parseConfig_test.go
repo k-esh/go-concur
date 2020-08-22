@@ -5,11 +5,16 @@ import (
 	"testing"
 )
 
+const checkMark = "\u2713"
+
 func TestEmptyFileFails(t *testing.T) {
-	bogusFile := "/xxxxfoo/bar.yyyyy"
+	bogusFile := "/yyyyyoo/bar.yyyyy"
 	_, err := config.InitJobSteps(bogusFile)
 	if err == nil {
 		t.Error("expected error but did not get it; passed file that does not exist")
+	} else {
+		t.Log("should be error on invalid file as config", checkMark)
+
 	}
 }
 
