@@ -8,7 +8,7 @@ import (
 )
 
 type CommandUnitResult struct {
-	Nickname string
+	Name string
 	Command string
 	Args []string
 	OutputStdAndError string
@@ -28,10 +28,13 @@ func main() {
 		configFile = defaultConfigFile
 	}
 	log.Printf("config file set to: %s \n", configFile)
-	myCommandUnits := config.InitJobSteps(configFile)
+	CommandConfig, err := config.InitJobSteps(configFile)
+	if err != nil {
+		log.Fatal("bad config file error: %s", err)
+	}
 
-	cuResults := runner.NewHampshire(myCommandUnits)
-	log.Printf("all %d of the jobsteps are done", len(myCommandUnits))
+	cuResults, err := runner.NewJersey(CommandConfig)
+	log.Printf("all %d of the jobsteps are done", len(CommandConfig.CommandUnits))
 //TODO use below instead	log.Printf("results: %+v\n", cuResults)
 
 	var failCount int

@@ -1,0 +1,20 @@
+# configuation of commands and their args
+# this is a TOML document.
+
+# top level structure
+title = "Demonstration Test Config"
+maxRuntime = 120
+
+[commandunits]
+    [commandunits.firstCommandUnit]
+    command = "/bin/sh"
+    args = ["date"]
+
+    [commandunits.favoriteCommandUnit]
+    command = "echo"
+    args = ["hi","gopher"]
+
+    [commandunits.finalCommandUnit]
+    command = "date"
+    args = ["+%D-%H:%M:%S-%Z"]
+
