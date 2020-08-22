@@ -2,23 +2,43 @@ package test
 
 import (
 	"example.com/runner/pkg/config"
+	"example.com/runner/pkg/runner"
 	"testing"
 )
 
 const checkMark = "\u2713"
+const ballotBox = "\u2717"
 
-func TestEmptyFileFails(t *testing.T) {
+
+func TestFileNotFoundYieldsError(t *testing.T) {
 	bogusFile := "/yyyyyoo/bar.yyyyy"
+	t.Log("when instantiation from bogus file")
+
 	_, err := config.InitJobSteps(bogusFile)
 	if err == nil {
-		t.Error("expected error but did not get it; passed file that does not exist")
+		t.Errorf("\tNew() should give error on bad file %s %s", bogusFile, ballotBox)
 	} else {
-		t.Log("should be error on invalid file as config", checkMark)
+		t.Logf("\tNew() should give error %s", checkMark)
 
 	}
 }
 
-func TestSampleFileParses(t *testing.T) {
+func TestConstruct(t *testing.T) {
+	file := "sampleConfig.toml"
+	t.Logf("when instantiation from file: %s", file)
+
+	r , err := runner.New(file)
+	if err != nil {
+		t.Errorf("\tshould be able to instantiate a runner %s, %s", err, ballotBox)
+	} else {
+		t.Logf("\tshould instantiate a: %T %s", r, checkCheck)
+		//here call to a.Start() is possible but wont do in this test
+	}
+}
+
+
+
+	func TestSampleFileParses(t *testing.T) {
 	configFile := "sampleConfig.toml" //the default config file  TODO put in folder test
 	testConfig, err := config.InitJobSteps(configFile)
 	if err != nil {
@@ -37,11 +57,11 @@ func TestSampleFileParses(t *testing.T) {
 	//for each CommandUnit we have put in the sample test file, assert is as expected
 	///- firstCommandUnit value {/bin/sh [date]}
 	first := testConfig.CommandUnits["firstCommandUnit"]
-	if first.Command != "/bin/sh" {
-		t.Errorf("firstCommandUnit name wanted /bin/sh, got: %s", first.Command)
+	if first.Command != "date" {
+		t.Errorf("firstCommandUnit name wanted date, got: %s", first.Command)
 	}
-	if first.Args[0] != "date" {
-		t.Errorf("firstCommandUnit solo argument wanted date, got: %s", first.Args[0])
+	if first.Args != nil {
+		t.Errorf("firstCommandUnit argument wanted nil, got: %v", first)
 	}
 
 	///- favoriteCommandUnit value {echo [hi gopher]}

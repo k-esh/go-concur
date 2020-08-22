@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-const checkCheck = checkMark
-const ballotBox = "\u2717"
+const checkCheck = "\u2717"
+//const ballotBox = "\u2717"
 
-func TestConstruct(t *testing.T) {
+func XXXTestConstruct(t *testing.T) {
 	file := "/Users/mac/craft/innov/goBatch/test/sampleConfig.toml"
 
 	t.Logf("when instantiation from file: %s", file)

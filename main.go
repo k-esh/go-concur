@@ -2,7 +2,6 @@ package main
 
 import (
 	"example.com/runner/pkg/config"
-	"example.com/runner/pkg/runner"
 	"log"
 	"os"
 )
