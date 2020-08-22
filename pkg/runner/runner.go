@@ -8,6 +8,10 @@ import (
 	"os/exec"
 )
 
+type Runner struct {
+	config config.CommandConfig
+}
+//TODO can return a parent child / header childs...nicer than slice
 type CommandUnitResult struct {
 	Name              string
 	Command           string
@@ -19,27 +23,39 @@ type CommandUnitResult struct {
 
 const defaultFailureCode = math.MaxInt16
 
-//TODO logging in json format maybe zip library
-func NewJersey(commandDocket config.CommandConfig) ([]CommandUnitResult, error) {
-	//get out error if the config in has zero to do
-	if len(commandDocket.CommandUnits) == 0 {
-		return nil, errors.New("invalid config has zero elements to run")
+//parses input file returns ready to use runner, or parse file error
+func New(configFile string) (*Runner , error) {
+	//if any inputfile/parsing errors return error here
+	configuration, err := config.InitJobSteps(configFile)
+	if err != nil {
+		return nil, err
+	}
+	if len(configuration.CommandUnits) == 0 {
+		return nil, errors.New("invalid config has zero elements to be run")
 	}
 
+
+	return &Runner{
+		config: configuration,
+	}, nil
+}
+
+func (r *Runner) Start () ([]CommandUnitResult, error) {
+	docket := r.config
 	resultChannel := make(chan CommandUnitResult) //channel for each execution to write its results
-	for name, commandElement := range commandDocket.CommandUnits {
+	for name, commandElement := range docket.CommandUnits {
 		go runStep(name, commandElement, resultChannel)
 	}
-	//TODO am I doing make corerctly with capacity ?
-	cuResults := make([]CommandUnitResult, 0, len(commandDocket.CommandUnits))
-	for i := 0; i < len(commandDocket.CommandUnits); i++ {
+
+	cuResults := make([]CommandUnitResult, 0, len(docket.CommandUnits))
+	for i := 0; i < len(docket.CommandUnits); i++ {
 		result := <-resultChannel
 		cuResults = append(cuResults, result)
 		log.Printf("jobstep: %s has finished with status: %d\n", result.Name, result.ExitCode)
 	}
 
-	log.Printf("all %d of the jobsteps are done", len(commandDocket.CommandUnits))
-	log.Printf("results: %+v\n", cuResults)
+	log.Printf("all %d of the jobsteps are done", len(docket.CommandUnits))
+
 	return cuResults, nil
 }
 
